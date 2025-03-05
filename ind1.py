@@ -82,29 +82,35 @@ if selected=="APPLICATION":
             width=float(width) if width else None
             button1=st.button(":rainbow[PREDICT SELLING PRICE]")
             if button1:
-                data={"country":country,"status": status,"item type":item_type,"application":application,"width": width,"quantity tons_log":quantity_tons,"customer_log":customer,"thickness_log": thickness,"product_ref_log":product_ref,
-                      "item_date_year":item_date_year,"item_date_month": item_date_month,"item_date_day":item_date_day,"delivery_date_year":delivery_date_year,"delivery_date_month":delivery_date_month,"delivery_date_day":delivery_date_day}
+                if not all ([quantity_tons, customer, thickness, width, product_ref]):
+                    st.write("Please provide all required inputs.")  # Display error if inputs are missing
+                else:
+                    try:
+                        data={"country":country,"status": status,"item type":item_type,"application":application,"width": width,"quantity tons_log":quantity_tons,"customer_log":customer,"thickness_log": thickness,"product_ref_log":product_ref,
+                         "item_date_year":item_date_year,"item_date_month": item_date_month,"item_date_day":item_date_day,"delivery_date_year":delivery_date_year,"delivery_date_month":delivery_date_month,"delivery_date_day":delivery_date_day}
 
-                df=pd.DataFrame(data,index=[1])
+                        df=pd.DataFrame(data,index=[1])
+                        df.fillna(0,inplace=True)
 
-                #convert log values
+                        #convert log values
 
-                df['quantity tons_log']=np.log(float(df["quantity tons_log"]))
-                df['customer_log']=np.log(float(df["customer_log"]))
-                df['thickness_log']=np.log(float(df["thickness_log"]))if thickness else None
-                df['product_ref_log']=np.log(float(df["product_ref_log"]))
+                        df['quantity tons_log']=np.log(float(df["quantity tons_log"]))if float(df["quantity tons_log"]) > 0 else 0
+                        df['customer_log']=np.log(float(df["customer_log"]))if float(df["customer_log"]) > 0 else 0
+                        df['thickness_log']=np.log(float(df["thickness_log"]))if thickness and float(df["thickness_log"]) > 0 else 0
+                        df['product_ref_log']=np.log(float(df["product_ref_log"]))if float(df["product_ref_log"]) > 0 else 0
 
 
-                # deserializing the model
-                with open("c:/Users/ADMIN/Desktop/projects_coding/industrial/Regression model.pk1","rb") as f3:
-                    R_model=pickle.load(f3)
-                with open("c:/Users/ADMIN/Desktop/projects_coding/industrial/scalar.pkl","rb") as f4:
-                    scalar=pickle.load(f4)
-                new_data=scalar.transform(df)
-                y_pred=R_model.predict(new_data)
-                st.write('### :violet[Selling price is]')
-                st.write(np.exp(y_pred))
-
+                        # deserializing the model
+                        with open("c:/Users/ADMIN/Desktop/projects_coding/industrial/Regression model.pk1","rb") as f3:
+                            R_model=pickle.load(f3)
+                        with open("c:/Users/ADMIN/Desktop/projects_coding/industrial/scalar.pkl","rb") as f4:
+                            scalar=pickle.load(f4)
+                        new_data=scalar.transform(df)
+                        y_pred=R_model.predict(new_data)
+                        st.write('### :violet[Selling price is]')
+                        st.write(np.exp(y_pred))
+                    except Exception as e:
+                        st.write("Error during prediction:", e)
             #status prediction
     if select==":green[STATUS PREDICTION]":
         col3,col4=st.columns(2)
@@ -149,30 +155,45 @@ if selected=="APPLICATION":
             width=st.text_input(":rainbow[SELECT WIDTH](MIN:1.0 & MAX:2990.0)")
             width=float(width) if width else None
             button2=st.button(":rainbow[PREDICT STATUS]")
+            threshold = st.slider("Set Threshold for 'WON'", min_value=0.0, max_value=1.0, value=0.5, step=0.1)  # Slider for threshold
             if button2:
-                data1={"country":country,"item type":item_type,"application":application,"width": width,"quantity tons_log":quantity_tons,"customer_log":customer,"thickness_log": thickness,"selling_price_log":selling_price,"product_ref_log":product_ref,
-                      "item_date_year":item_date_year,"item_date_month": item_date_month,"item_date_day":item_date_day,"delivery_date_year":delivery_date_year,"delivery_date_month":delivery_date_month,"delivery_date_day":delivery_date_day}
-
-                df1=pd.DataFrame(data1,index=[1])
-
-                #convert log values
-                df1['selling_price_log']=np.log(float(df1['selling_price_log']))
-                df1['quantity tons_log']=np.log(float(df1["quantity tons_log"]))
-                df1['customer_log']=np.log(float(df1["customer_log"]))
-                df1['thickness_log']=np.log(float(df1["thickness_log"]))if thickness else None
-                df1['product_ref_log']=np.log(float(df1["product_ref_log"]))if product_ref else None
-
-                #Deserializing the model
-                with open("c:/Users/ADMIN/Desktop/projects_coding/industrial/classification.pkl","rb") as f7:
-                    c_model=pickle.load(f7)
-                with open("c:/Users/ADMIN/Desktop/projects_coding/industrial/scalar2.pkl","rb")as f8:
-                    scalar_=pickle.load(f8)
-                new_data1=scalar_.transform(df1)
-                y_pred1=c_model.predict(new_data1)
-                if y_pred1==1:
-                    st.write('### :violet[STATUS IS WON]')
+                if not all([selling_price, quantity_tons, customer, thickness, width, product_ref]):
+                    st.write("Please fill in all required fields.")
                 else:
-                    st.write('### :violet[STATUS IS LOST]')
+                    try:
+                        data1={"country":country,"item type":item_type,"application":application,"width": width,"quantity tons_log":quantity_tons,"customer_log":customer,"thickness_log": thickness,"selling_price_log":selling_price,"product_ref_log":product_ref,
+                        "item_date_year":item_date_year,"item_date_month": item_date_month,"item_date_day":item_date_day,"delivery_date_year":delivery_date_year,"delivery_date_month":delivery_date_month,"delivery_date_day":delivery_date_day}
+
+                        df1=pd.DataFrame(data1,index=[1])
+                        df1.fillna(0,inplace=True)
+
+                        #convert log values
+                        df1['selling_price_log']=np.log(float(df1['selling_price_log'])) if float(df1['selling_price_log']) > 0 else None
+                        df1['quantity tons_log']=np.log(float(df1["quantity tons_log"])) if float(df1["quantity tons_log"]) > 0 else None
+                        df1['customer_log']=np.log(float(df1["customer_log"])) if float(df1['customer_log']) > 0 else None
+                        df1['thickness_log']=np.log(float(df1["thickness_log"]))if thickness and float(df1["thickness_log"]) > 0 else 0
+                        df1['product_ref_log']=np.log(float(df1["product_ref_log"]))if product_ref and float(df1["product_ref_log"]) > 0 else 0
+
+
+                        #Deserializing the model
+                        with open("c:/Users/ADMIN/Desktop/projects_coding/industrial/classification.pkl","rb") as f7:
+                            c_model=pickle.load(f7)
+                        with open("c:/Users/ADMIN/Desktop/projects_coding/industrial/scalar2.pkl","rb")as f8:
+                            scalar_=pickle.load(f8)
+                        new_data1=scalar_.transform(df1)
+                        y_pred1_prob=c_model.predict_proba(new_data1)
+                        won_prob=y_pred1_prob[0][1]
+                        lost_prob=y_pred1_prob[0][0]
+                        st.write(f"### Probability of LOST: {lost_prob:.2f}")
+                        st.write(f"### Probability of WON: {won_prob:.2f}")
+
+                        if y_pred1_prob[0][1]>threshold:
+                            st.write('### :violet[STATUS IS WON]')
+                        else:
+                            st.write('### :violet[STATUS IS LOST]')
+                    except Exception as e:
+                        st.write("error diring prediction",e)
+
                
 
 
